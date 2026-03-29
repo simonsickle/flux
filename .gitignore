@@ -1,0 +1,20 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Build outputs
+**/build/
+**/out/
+
+# Gradle wrapper jar
+gradle/wrapper/gradle-wrapper.jar
+
+# Room schema output (optional - you might want to commit this)
+# **/schemas/
