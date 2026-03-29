@@ -55,7 +55,7 @@ data class MetaPreviewDto(
     val posterShape: String? = null,
     val background: String? = null,
     val description: String? = null,
-    val year: Int? = null,
+    val year: String? = null,
     @SerialName("imdbRating") val imdbRating: String? = null,
     val genres: List<String> = emptyList()
 )
