@@ -65,8 +65,9 @@ class DebridRepositoryImpl @Inject constructor(
             attempts++
         }
 
-        val linkToUnrestrict = if (stream.fileIdx != null && torrentInfo.links.size > stream.fileIdx) {
-            torrentInfo.links[stream.fileIdx]
+        val fileIndex = stream.fileIdx
+        val linkToUnrestrict = if (fileIndex != null && torrentInfo.links.size > fileIndex) {
+            torrentInfo.links[fileIndex]
         } else {
             torrentInfo.links.firstOrNull()
                 ?: throw IllegalStateException("No links available in torrent")

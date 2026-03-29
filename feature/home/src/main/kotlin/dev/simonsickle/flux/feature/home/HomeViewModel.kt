@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.simonsickle.flux.core.model.CatalogRow
 import dev.simonsickle.flux.core.model.ContentType
+import dev.simonsickle.flux.domain.repository.AddonRepository
 import dev.simonsickle.flux.domain.usecase.GetAggregatedCatalogUseCase
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,32 +19,51 @@ data class HomeUiState(
     val error: String? = null
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getAggregatedCatalogUseCase: GetAggregatedCatalogUseCase
+    private val getAggregatedCatalogUseCase: GetAggregatedCatalogUseCase,
+    private val addonRepository: AddonRepository
 ) : ViewModel() {
+
+    private val _selectedContentType = MutableStateFlow(ContentType.MOVIE)
+    private val _manualRefresh = MutableStateFlow(0)
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadCatalogs()
+        // Re-fetch catalogs whenever selected type changes, addons change, or manual refresh
+        viewModelScope.launch {
+            combine(
+                _selectedContentType,
+                addonRepository.getInstalledAddons(),
+                _manualRefresh
+            ) { type, addons, _ -> Pair(type, addons) }
+                .distinctUntilChangedBy { (type, addons) -> type to addons.map { it.manifest.id } }
+                .collect { (type, _) ->
+                    loadCatalogs(type)
+                }
+        }
     }
 
     fun selectContentType(contentType: ContentType) {
-        _uiState.value = _uiState.value.copy(selectedContentType = contentType)
-        loadCatalogs()
+        _selectedContentType.value = contentType
     }
 
     fun refresh() {
-        loadCatalogs()
+        _manualRefresh.value++
     }
 
-    private fun loadCatalogs() {
+    private fun loadCatalogs(contentType: ContentType) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                selectedContentType = contentType
+            )
             try {
-                val rows = getAggregatedCatalogUseCase(_uiState.value.selectedContentType)
+                val rows = getAggregatedCatalogUseCase(contentType)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     catalogRows = rows

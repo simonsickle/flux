@@ -10,8 +10,8 @@ import javax.inject.Singleton
 
 @Singleton
 class FluxHttpClient @Inject constructor(
-    private val okHttpClient: OkHttpClient,
-    private val json: Json
+    @PublishedApi internal val okHttpClient: OkHttpClient,
+    @PublishedApi internal val json: Json
 ) {
     suspend inline fun <reified T> getJson(url: String): T = withContext(Dispatchers.IO) {
         val request = Request.Builder()

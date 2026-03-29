@@ -1,14 +1,15 @@
 package dev.simonsickle.flux.feature.detail
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyRow
-import androidx.tv.foundation.lazy.list.items
 import androidx.tv.material3.*
 import coil3.compose.AsyncImage
 import dev.simonsickle.flux.core.model.StreamInfo
@@ -41,7 +42,7 @@ fun TvDetailScreen(
                 }
             }
             uiState.meta != null -> {
-                TvLazyColumn(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 48.dp, vertical = 27.dp)
@@ -95,13 +96,16 @@ fun TvDetailScreen(
                             if (uiState.isLoadingStreams) {
                                 CircularProgressIndicator()
                             } else {
-                                TvLazyRow(
+                                LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     items(uiState.streams) { stream ->
                                         Card(onClick = { onPlayStream(stream) }) {
                                             Column(modifier = Modifier.padding(16.dp).width(200.dp)) {
-                                                Text(stream.name ?: "Stream", style = MaterialTheme.typography.titleMedium)
+                                                Text(
+                                                    stream.name ?: "Stream",
+                                                    style = MaterialTheme.typography.titleMedium
+                                                )
                                                 stream.description?.let {
                                                     Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 3)
                                                 }
