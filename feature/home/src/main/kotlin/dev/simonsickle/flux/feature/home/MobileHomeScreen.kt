@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dev.simonsickle.flux.core.model.ContentType
 import dev.simonsickle.flux.core.model.MetaPreview
+import dev.simonsickle.flux.domain.repository.WatchHistoryEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +32,8 @@ fun MobileHomeScreen(
     onRefresh: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToAddons: () -> Unit
+    onNavigateToAddons: () -> Unit,
+    onNavigateToDetail: (type: String, id: String) -> Unit = { _, _ -> }
 ) {
     Scaffold(
         topBar = {
@@ -96,6 +98,16 @@ fun MobileHomeScreen(
                 }
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        if (uiState.continueWatching.isNotEmpty()) {
+                            item {
+                                ContinueWatchingRow(
+                                    items = uiState.continueWatching,
+                                    onItemClick = { entry ->
+                                        onNavigateToDetail(entry.contentType, entry.contentId)
+                                    }
+                                )
+                            }
+                        }
                         items(uiState.catalogRows) { row ->
                             CatalogRowSection(
                                 row = row,
@@ -157,5 +169,59 @@ private fun PosterCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp)
         )
+    }
+}
+
+@Composable
+private fun ContinueWatchingRow(
+    items: List<WatchHistoryEntry>,
+    onItemClick: (WatchHistoryEntry) -> Unit
+) {
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        Text(
+            text = "Continue Watching",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(items) { entry ->
+                Column(
+                    modifier = Modifier
+                        .width(160.dp)
+                        .clickable { onItemClick(entry) }
+                ) {
+                    Box {
+                        AsyncImage(
+                            model = entry.poster,
+                            contentDescription = entry.title,
+                            modifier = Modifier
+                                .width(160.dp)
+                                .height(100.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        if (entry.duration > 0) {
+                            LinearProgressIndicator(
+                                progress = { entry.progressFraction },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                                    .align(Alignment.BottomStart)
+                            )
+                        }
+                    }
+                    Text(
+                        text = entry.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
     }
 }

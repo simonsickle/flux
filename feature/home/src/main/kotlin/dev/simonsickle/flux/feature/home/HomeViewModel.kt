@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.simonsickle.flux.core.model.CatalogRow
 import dev.simonsickle.flux.core.model.ContentType
 import dev.simonsickle.flux.domain.repository.AddonRepository
+import dev.simonsickle.flux.domain.repository.WatchHistoryEntry
+import dev.simonsickle.flux.domain.repository.WatchHistoryRepository
 import dev.simonsickle.flux.domain.usecase.GetAggregatedCatalogUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -15,6 +17,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = false,
     val catalogRows: List<CatalogRow> = emptyList(),
+    val continueWatching: List<WatchHistoryEntry> = emptyList(),
     val selectedContentType: ContentType = ContentType.MOVIE,
     val error: String? = null
 )
@@ -23,17 +26,17 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getAggregatedCatalogUseCase: GetAggregatedCatalogUseCase,
-    private val addonRepository: AddonRepository
+    private val addonRepository: AddonRepository,
+    private val watchHistoryRepository: WatchHistoryRepository
 ) : ViewModel() {
 
     private val _selectedContentType = MutableStateFlow(ContentType.MOVIE)
     private val _manualRefresh = MutableStateFlow(0)
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        // Re-fetch catalogs whenever selected type changes, addons change, or manual refresh
+        // Reload catalogs on type/addon change
         viewModelScope.launch {
             combine(
                 _selectedContentType,
@@ -41,9 +44,14 @@ class HomeViewModel @Inject constructor(
                 _manualRefresh
             ) { type, addons, _ -> Pair(type, addons) }
                 .distinctUntilChangedBy { (type, addons) -> type to addons.map { it.manifest.id } }
-                .collect { (type, _) ->
-                    loadCatalogs(type)
-                }
+                .collect { (type, _) -> loadCatalogs(type) }
+        }
+
+        // Observe watch history
+        viewModelScope.launch {
+            watchHistoryRepository.getRecentlyWatched(20).collect { history ->
+                _uiState.value = _uiState.value.copy(continueWatching = history)
+            }
         }
     }
 
@@ -64,10 +72,7 @@ class HomeViewModel @Inject constructor(
             )
             try {
                 val rows = getAggregatedCatalogUseCase(contentType)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    catalogRows = rows
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false, catalogRows = rows)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

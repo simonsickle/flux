@@ -25,6 +25,7 @@ dependencies {
     implementation(project(":core:player"))
     implementation(project(":core:database"))
     implementation(project(":domain"))
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)

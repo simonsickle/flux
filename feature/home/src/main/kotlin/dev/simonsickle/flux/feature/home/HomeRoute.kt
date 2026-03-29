@@ -34,7 +34,8 @@ fun HomeRoute(
             onRefresh = viewModel::refresh,
             onNavigateToSearch = onNavigateToSearch,
             onNavigateToSettings = onNavigateToSettings,
-            onNavigateToAddons = onNavigateToAddons
+            onNavigateToAddons = onNavigateToAddons,
+            onNavigateToDetail = onNavigateToDetail
         )
     }
 }
