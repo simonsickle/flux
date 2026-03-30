@@ -1,7 +1,43 @@
 package dev.simonsickle.flux.data.addon.dto
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+
+// Handles resources field that can be a mix of strings and objects like {"name":"stream",...}
+object ResourceListSerializer : KSerializer<List<String>> {
+    override val descriptor: SerialDescriptor = ListSerializer(String.serializer()).descriptor
+
+    override fun deserialize(decoder: Decoder): List<String> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: return emptyList()
+        return when (val element = jsonDecoder.decodeJsonElement()) {
+            is JsonArray -> element.mapNotNull { item ->
+                when (item) {
+                    is JsonPrimitive -> item.content.takeIf { it.isNotEmpty() }
+                    is JsonObject -> item["name"]?.jsonPrimitive?.content
+                    else -> null
+                }
+            }
+            else -> emptyList()
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: List<String>) {
+        encoder.encodeSerializableValue(ListSerializer(String.serializer()), value)
+    }
+}
 
 @Serializable
 data class AddonManifestDto(
@@ -11,6 +47,7 @@ data class AddonManifestDto(
     val description: String = "",
     val logo: String? = null,
     val background: String? = null,
+    @Serializable(with = ResourceListSerializer::class)
     val resources: List<String> = emptyList(),
     val types: List<String> = emptyList(),
     val idPrefixes: List<String> = emptyList(),

@@ -9,7 +9,7 @@ fun DetailRoute(
     type: String,
     id: String,
     onNavigateUp: () -> Unit,
-    onNavigateToPlayer: (streamUrl: String) -> Unit,
+    onNavigateToPlayer: (streamUrl: String, contentId: String, contentType: String, title: String, poster: String?) -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -17,7 +17,14 @@ fun DetailRoute(
 
     LaunchedEffect(uiState.resolvedStreamUrl) {
         uiState.resolvedStreamUrl?.let { url ->
-            onNavigateToPlayer(url)
+            val meta = uiState.meta
+            onNavigateToPlayer(
+                url,
+                meta?.id ?: id,
+                type,
+                meta?.name ?: "",
+                meta?.poster
+            )
             viewModel.clearResolvedStream()
         }
     }

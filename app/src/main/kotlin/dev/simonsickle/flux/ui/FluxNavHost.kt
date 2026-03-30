@@ -1,5 +1,6 @@
 package dev.simonsickle.flux.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -23,6 +24,19 @@ object FluxRoutes {
     const val ADDONS = "addons"
 
     fun detail(type: String, id: String) = "detail/$type/$id"
+
+    fun player(
+        url: String,
+        contentId: String = "",
+        contentType: String = "",
+        title: String = "",
+        poster: String? = null
+    ): String {
+        val encodedUrl = Uri.encode(url)
+        val encodedTitle = Uri.encode(title)
+        val encodedPoster = poster?.let { Uri.encode(it) } ?: ""
+        return "player?url=$encodedUrl&contentId=$contentId&contentType=$contentType&title=$encodedTitle&poster=$encodedPoster"
+    }
 }
 
 @Composable
@@ -57,18 +71,25 @@ fun FluxNavHost(modifier: Modifier = Modifier) {
                 type = type,
                 id = id,
                 onNavigateUp = { navController.navigateUp() },
-                onNavigateToPlayer = { streamUrl ->
-                    navController.navigate("${FluxRoutes.PLAYER}?url=$streamUrl")
+                onNavigateToPlayer = { streamUrl, contentId, contentType, title, poster ->
+                    navController.navigate(
+                        FluxRoutes.player(streamUrl, contentId, contentType, title, poster)
+                    )
                 }
             )
         }
         composable(
-            route = "${FluxRoutes.PLAYER}?url={url}",
-            arguments = listOf(navArgument("url") { type = NavType.StringType; defaultValue = "" })
-        ) { backStackEntry ->
-            val url = backStackEntry.arguments?.getString("url") ?: ""
+            route = "${FluxRoutes.PLAYER}?url={url}&contentId={contentId}&contentType={contentType}&title={title}&poster={poster}",
+            arguments = listOf(
+                navArgument("url") { type = NavType.StringType; defaultValue = "" },
+                navArgument("contentId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("contentType") { type = NavType.StringType; defaultValue = "" },
+                navArgument("title") { type = NavType.StringType; defaultValue = "" },
+                navArgument("poster") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) {
             PlayerRoute(
-                streamUrl = url,
+                streamUrl = "",  // PlayerViewModel reads from SavedStateHandle
                 onNavigateUp = { navController.navigateUp() }
             )
         }

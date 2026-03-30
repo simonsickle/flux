@@ -10,7 +10,8 @@ class StremioAddonApi @Inject constructor(
     private val httpClient: FluxHttpClient
 ) {
     suspend fun fetchManifest(baseUrl: String): AddonManifestDto {
-        val url = "${baseUrl.trimEnd('/')}/manifest.json"
+        val base = baseUrl.trimEnd('/').removeSuffix("/manifest.json")
+        val url = "$base/manifest.json"
         return httpClient.getJson(url)
     }
 
