@@ -32,6 +32,8 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.navigation.compose)
+    implementation(libs.tv.foundation)
+    implementation(libs.tv.material)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.tooling)
 }

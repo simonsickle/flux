@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import coil3.compose.AsyncImage
+import dev.simonsickle.flux.core.common.tvContentPadding
 import dev.simonsickle.flux.core.model.StreamInfo
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -45,7 +46,7 @@ fun TvDetailScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 48.dp, vertical = 27.dp)
+                        .padding(tvContentPadding())
                 ) {
                     item {
                         Row(modifier = Modifier.fillMaxWidth()) {

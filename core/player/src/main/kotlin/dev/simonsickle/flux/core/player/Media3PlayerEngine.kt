@@ -1,5 +1,9 @@
 package dev.simonsickle.flux.core.player
 
+import android.content.Context.AUDIO_SERVICE
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.content.Context
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -32,7 +36,41 @@ class Media3PlayerEngine(private val context: Context) : PlayerEngine {
     override val error: StateFlow<PlaybackError?> = _error
 
     private val scope = CoroutineScope(Dispatchers.Main)
+    private val audioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
     private var positionJob: Job? = null
+    private var hasAudioFocus = false
+
+    private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pause()
+
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                exoPlayer.volume = 1f
+                if (_state.value == PlaybackState.PAUSED) {
+                    play()
+                }
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                exoPlayer.volume = 0.2f
+            }
+        }
+    }
+
+    private val audioFocusRequest: AudioFocusRequest by lazy {
+        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                    .build()
+            )
+            .setAcceptsDelayedFocusGain(false)
+            .setWillPauseWhenDucked(false)
+            .setOnAudioFocusChangeListener(focusChangeListener)
+            .build()
+    }
 
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context).build().also { player ->
         player.addListener(object : Player.Listener {
@@ -65,6 +103,7 @@ class Media3PlayerEngine(private val context: Context) : PlayerEngine {
 
     override fun prepare(uri: String, startPosition: Long) {
         _error.value = null
+        requestAudioFocus()
         val mediaItem = MediaItem.fromUri(uri)
         exoPlayer.setMediaItem(mediaItem)
         if (startPosition > 0) exoPlayer.seekTo(startPosition)
@@ -73,6 +112,9 @@ class Media3PlayerEngine(private val context: Context) : PlayerEngine {
     }
 
     override fun play() {
+        if (!hasAudioFocus) {
+            requestAudioFocus()
+        }
         exoPlayer.play()
     }
 
@@ -114,7 +156,19 @@ class Media3PlayerEngine(private val context: Context) : PlayerEngine {
 
     override fun release() {
         stopPositionTracking()
+        abandonAudioFocus()
         exoPlayer.release()
+    }
+
+    private fun requestAudioFocus() {
+        if (hasAudioFocus) return
+        hasAudioFocus = audioManager.requestAudioFocus(audioFocusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonAudioFocus() {
+        if (!hasAudioFocus) return
+        audioManager.abandonAudioFocusRequest(audioFocusRequest)
+        hasAudioFocus = false
     }
 
     private fun startPositionTracking() {

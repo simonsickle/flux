@@ -14,7 +14,7 @@ data class AddonsUiState(
     val addons: List<InstalledAddon> = emptyList(),
     val isInstalling: Boolean = false,
     val installError: String? = null,
-    val installSuccess: Boolean = false
+    val installSuccessMessage: String? = null
 )
 
 @HiltViewModel
@@ -23,17 +23,45 @@ class AddonsViewModel @Inject constructor(
     private val installAddonUseCase: InstallAddonUseCase
 ) : ViewModel() {
 
-    val uiState: StateFlow<AddonsUiState> = addonRepository.getInstalledAddons()
-        .map { AddonsUiState(addons = it) }
+    private val isInstalling = MutableStateFlow(false)
+    private val installError = MutableStateFlow<String?>(null)
+    private val installSuccessMessage = MutableStateFlow<String?>(null)
+
+    val uiState: StateFlow<AddonsUiState> = combine(
+        addonRepository.getInstalledAddons(),
+        isInstalling,
+        installError,
+        installSuccessMessage
+    ) { addons, installing, error, successMessage ->
+        AddonsUiState(
+            addons = addons,
+            isInstalling = installing,
+            installError = error,
+            installSuccessMessage = successMessage
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AddonsUiState())
 
     fun installAddon(url: String) {
+        val trimmedUrl = url.trim()
+        if (trimmedUrl.isBlank()) {
+            installError.value = "Transport URL is required"
+            installSuccessMessage.value = null
+            return
+        }
+
         viewModelScope.launch {
-            // We can't mutate stateIn, use a separate mechanism
             try {
-                installAddonUseCase(url)
+                isInstalling.value = true
+                installError.value = null
+                installSuccessMessage.value = null
+                installAddonUseCase(trimmedUrl)
+                installSuccessMessage.value = "Addon installed successfully"
             } catch (e: Exception) {
-                // Error handled via snackbar
+                installError.value = e.message ?: "Failed to install addon"
+                installSuccessMessage.value = null
+            } finally {
+                isInstalling.value = false
             }
         }
     }
@@ -47,6 +75,12 @@ class AddonsViewModel @Inject constructor(
     fun toggleAddon(addonId: String, enabled: Boolean) {
         viewModelScope.launch {
             addonRepository.setAddonEnabled(addonId, enabled)
+        }
+    }
+
+    fun moveAddon(addonId: String, newIndex: Int) {
+        viewModelScope.launch {
+            addonRepository.updateAddonOrder(addonId, newIndex.coerceAtLeast(0))
         }
     }
 }

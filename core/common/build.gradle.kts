@@ -31,4 +31,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.datastore.preferences)
     api(libs.compose.runtime)
+    api(libs.compose.ui)
+    api(libs.compose.foundation)
 }

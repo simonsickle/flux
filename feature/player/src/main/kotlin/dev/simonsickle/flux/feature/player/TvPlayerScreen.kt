@@ -14,11 +14,10 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import dev.simonsickle.flux.core.common.tvContentPadding
 import dev.simonsickle.flux.core.player.PlaybackState
 
-@OptIn(UnstableApi::class)
 @Composable
 fun TvPlayerScreen(
     viewModel: PlayerViewModel,
@@ -101,7 +100,7 @@ fun TvPlayerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .padding(48.dp)
+                        .padding(tvContentPadding())
                 ) {
                     if (duration > 0) {
                         LinearProgressIndicator(

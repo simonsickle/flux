@@ -3,6 +3,7 @@ package dev.simonsickle.flux.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.simonsickle.flux.core.common.SettingsRepository
 import dev.simonsickle.flux.core.model.CatalogRow
 import dev.simonsickle.flux.core.model.ContentType
 import dev.simonsickle.flux.domain.repository.AddonRepository
@@ -27,7 +28,8 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val getAggregatedCatalogUseCase: GetAggregatedCatalogUseCase,
     private val addonRepository: AddonRepository,
-    private val watchHistoryRepository: WatchHistoryRepository
+    private val watchHistoryRepository: WatchHistoryRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _selectedContentType = MutableStateFlow(ContentType.MOVIE)
@@ -36,6 +38,12 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            settingsRepository.defaultContentType.collect { savedType ->
+                _selectedContentType.value = ContentType.fromValue(savedType)
+            }
+        }
+
         // Reload catalogs on type/addon change
         viewModelScope.launch {
             combine(

@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.simonsickle.flux.core.common.SettingsRepository
 import dev.simonsickle.flux.domain.repository.DebridRepository
 import dev.simonsickle.flux.domain.repository.DebridUserInfo
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,19 +28,49 @@ class SettingsViewModel @Inject constructor(
     private val debridRepository: DebridRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    private val debridUserInfo = MutableStateFlow<DebridUserInfo?>(null)
+    private val isTestingConnection = MutableStateFlow(false)
+    private val connectionTestResult = MutableStateFlow<String?>(null)
+
+    private data class SettingsPreferencesState(
+        val token: String?,
+        val defaultContentType: String,
+        val preferredPlayer: String,
+        val subtitleLanguage: String,
+        val hardwareAcceleration: Boolean
+    )
+
+    private val preferencesState: Flow<SettingsPreferencesState> = combine(
         settingsRepository.realDebridToken,
         settingsRepository.defaultContentType,
         settingsRepository.preferredPlayer,
         settingsRepository.subtitleLanguage,
         settingsRepository.hardwareAcceleration
     ) { token, contentType, player, subtitleLang, hwAccel ->
-        SettingsUiState(
-            realDebridToken = token ?: "",
+        SettingsPreferencesState(
+            token = token,
             defaultContentType = contentType,
             preferredPlayer = player,
             subtitleLanguage = subtitleLang,
             hardwareAcceleration = hwAccel
+        )
+    }
+
+    val uiState: StateFlow<SettingsUiState> = combine(
+        preferencesState,
+        debridUserInfo,
+        isTestingConnection,
+        connectionTestResult
+    ) { preferences, userInfo, testing, testResult ->
+        SettingsUiState(
+            realDebridToken = preferences.token ?: "",
+            debridUserInfo = userInfo,
+            isTestingConnection = testing,
+            connectionTestResult = testResult,
+            defaultContentType = preferences.defaultContentType,
+            preferredPlayer = preferences.preferredPlayer,
+            subtitleLanguage = preferences.subtitleLanguage,
+            hardwareAcceleration = preferences.hardwareAcceleration
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -51,10 +82,21 @@ class SettingsViewModel @Inject constructor(
 
     fun testDebridConnection() {
         viewModelScope.launch {
-            // Update token first if needed
-            val userInfo = runCatching { debridRepository.getUserInfo() }
-            // We can't mutate uiState directly since it's derived from flows
-            // Just trigger a re-fetch
+            isTestingConnection.value = true
+            connectionTestResult.value = null
+            val result = runCatching { debridRepository.getUserInfo() }
+            result.onSuccess { userInfo ->
+                debridUserInfo.value = userInfo
+                connectionTestResult.value = if (userInfo != null) {
+                    "Connection successful"
+                } else {
+                    "No Real-Debrid account found for this token"
+                }
+            }.onFailure { error ->
+                debridUserInfo.value = null
+                connectionTestResult.value = error.message ?: "Connection test failed"
+            }
+            isTestingConnection.value = false
         }
     }
 
