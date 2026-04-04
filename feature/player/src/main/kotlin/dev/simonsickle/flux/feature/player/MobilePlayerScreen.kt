@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,7 +28,31 @@ fun MobilePlayerScreen(
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val currentPosition by viewModel.currentPosition.collectAsStateWithLifecycle()
     val duration by viewModel.duration.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val showResumeDialog by viewModel.showResumeDialog.collectAsStateWithLifecycle()
+    val savedPosition by viewModel.savedPosition.collectAsStateWithLifecycle()
     var showControls by remember { mutableStateOf(true) }
+
+    // Resume dialog
+    if (showResumeDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.startFromBeginning() },
+            title = { Text("Resume Playback") },
+            text = {
+                Text("Resume from ${formatTime(savedPosition)}?")
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.resumePlayback() }) {
+                    Text("Resume")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.startFromBeginning() }) {
+                    Text("Start Over")
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -44,18 +70,63 @@ fun MobilePlayerScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (showControls) {
+        // Error overlay
+        if (playbackState == PlaybackState.ERROR && error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.85f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Error,
+                        contentDescription = null,
+                        tint = Color(0xFFFF6B6B),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Playback Error",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        error?.message ?: "An unknown error occurred",
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = onNavigateUp,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Text("Go Back")
+                        }
+                        Button(onClick = { viewModel.retry() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showControls && playbackState != PlaybackState.ERROR) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.4f))
             ) {
-                // Top bar
+                // Top bar with title
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                        .align(Alignment.TopStart)
+                        .align(Alignment.TopStart),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
@@ -63,6 +134,48 @@ fun MobilePlayerScreen(
                             contentDescription = "Back",
                             tint = Color.White
                         )
+                    }
+                    if (viewModel.contentTitle.isNotEmpty()) {
+                        Text(
+                            text = viewModel.contentTitle,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    // Playback speed button
+                    var showSpeedMenu by remember { mutableStateOf(false) }
+                    var currentSpeed by remember { mutableFloatStateOf(1.0f) }
+                    Box {
+                        TextButton(onClick = { showSpeedMenu = true }) {
+                            Text(
+                                text = if (currentSpeed == 1.0f) "1x" else "${currentSpeed}x",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showSpeedMenu,
+                            onDismissRequest = { showSpeedMenu = false }
+                        ) {
+                            listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
+                                DropdownMenuItem(
+                                    text = { Text("${speed}x") },
+                                    onClick = {
+                                        currentSpeed = speed
+                                        viewModel.setPlaybackSpeed(speed)
+                                        showSpeedMenu = false
+                                    },
+                                    leadingIcon = if (speed == currentSpeed) {
+                                        { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null
+                                )
+                            }
+                        }
                     }
                 }
 

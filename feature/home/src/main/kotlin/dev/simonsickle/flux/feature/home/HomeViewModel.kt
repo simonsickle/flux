@@ -17,6 +17,7 @@ import javax.inject.Inject
 
 data class HomeUiState(
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val catalogRows: List<CatalogRow> = emptyList(),
     val continueWatching: List<WatchHistoryEntry> = emptyList(),
     val selectedContentType: ContentType = ContentType.MOVIE,
@@ -71,19 +72,32 @@ class HomeViewModel @Inject constructor(
         _manualRefresh.value++
     }
 
+    fun removeFromHistory(contentId: String) {
+        viewModelScope.launch {
+            watchHistoryRepository.deleteEntry(contentId)
+        }
+    }
+
     private fun loadCatalogs(contentType: ContentType) {
         viewModelScope.launch {
+            val isRefresh = _uiState.value.catalogRows.isNotEmpty()
             _uiState.value = _uiState.value.copy(
-                isLoading = true,
+                isLoading = !isRefresh,
+                isRefreshing = isRefresh,
                 error = null,
                 selectedContentType = contentType
             )
             try {
                 val rows = getAggregatedCatalogUseCase(contentType)
-                _uiState.value = _uiState.value.copy(isLoading = false, catalogRows = rows)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    catalogRows = rows
+                )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    isRefreshing = false,
                     error = e.message ?: "Failed to load content"
                 )
             }

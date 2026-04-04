@@ -41,7 +41,9 @@ fun DetailRoute(
             uiState = uiState,
             onNavigateUp = onNavigateUp,
             onLoadStreams = viewModel::loadStreams,
-            onPlayStream = viewModel::playStream
+            onPlayStream = viewModel::playStream,
+            onRetry = viewModel::retry,
+            onSelectSeason = viewModel::selectSeason
         )
     }
 }
