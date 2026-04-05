@@ -39,6 +39,8 @@ fun TvSettingsScreen(
     onSetSubtitleLanguage: (String) -> Unit,
     onSetHardwareAcceleration: (Boolean) -> Unit,
     onTestDebridConnection: () -> Unit,
+    onNavigateToSyncSend: () -> Unit = {},
+    onNavigateToSyncReceive: () -> Unit = {},
     initialToken: String
 ) {
     var tokenInput by rememberSaveable(initialToken) { mutableStateOf(initialToken) }
@@ -131,6 +133,28 @@ fun TvSettingsScreen(
                         checked = uiState.hardwareAcceleration,
                         onCheckedChange = onSetHardwareAcceleration
                     )
+                }
+            }
+        }
+        item {
+            Card(onClick = {}) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Sync Settings", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "Transfer settings between your devices over WiFi",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = onNavigateToSyncSend) {
+                            Text("Share to Device")
+                        }
+                        Button(onClick = onNavigateToSyncReceive) {
+                            Text("Receive from Device")
+                        }
+                    }
                 }
             }
         }

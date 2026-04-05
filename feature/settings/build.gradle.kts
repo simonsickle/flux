@@ -22,6 +22,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(project(":core:common"))
     implementation(project(":core:model"))
+    implementation(project(":core:sync"))
     implementation(project(":domain"))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

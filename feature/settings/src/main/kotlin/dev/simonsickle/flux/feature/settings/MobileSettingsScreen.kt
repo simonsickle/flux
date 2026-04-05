@@ -47,6 +47,8 @@ fun MobileSettingsScreen(
     onSetSubtitleLanguage: (String) -> Unit,
     onSetHardwareAcceleration: (Boolean) -> Unit,
     onTestDebridConnection: () -> Unit,
+    onNavigateToSyncSend: () -> Unit = {},
+    onNavigateToSyncReceive: () -> Unit = {},
     initialToken: String
 ) {
     var tokenVisible by rememberSaveable { mutableStateOf(false) }
@@ -121,6 +123,26 @@ fun MobileSettingsScreen(
                         checked = uiState.hardwareAcceleration,
                         onCheckedChange = onSetHardwareAcceleration
                     )
+                }
+            }
+            item {
+                HorizontalDivider()
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Sync Settings", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "Transfer settings between your devices over WiFi",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onNavigateToSyncSend) {
+                            Text("Share to Device")
+                        }
+                        TextButton(onClick = onNavigateToSyncReceive) {
+                            Text("Receive from Device")
+                        }
+                    }
                 }
             }
             item {

@@ -9,6 +9,8 @@ import dev.simonsickle.flux.core.common.LocalIsTv
 @Composable
 fun SettingsRoute(
     onNavigateUp: () -> Unit,
+    onNavigateToSyncSend: () -> Unit = {},
+    onNavigateToSyncReceive: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -25,6 +27,8 @@ fun SettingsRoute(
             onSetSubtitleLanguage = viewModel::setSubtitleLanguage,
             onSetHardwareAcceleration = viewModel::setHardwareAcceleration,
             onTestDebridConnection = viewModel::testDebridConnection,
+            onNavigateToSyncSend = onNavigateToSyncSend,
+            onNavigateToSyncReceive = onNavigateToSyncReceive,
             initialToken = initialToken
         )
     } else {
@@ -37,6 +41,8 @@ fun SettingsRoute(
             onSetSubtitleLanguage = viewModel::setSubtitleLanguage,
             onSetHardwareAcceleration = viewModel::setHardwareAcceleration,
             onTestDebridConnection = viewModel::testDebridConnection,
+            onNavigateToSyncSend = onNavigateToSyncSend,
+            onNavigateToSyncReceive = onNavigateToSyncReceive,
             initialToken = initialToken
         )
     }
