@@ -23,7 +23,7 @@ class GetAggregatedCatalogUseCase @Inject constructor(
 
             matchingCatalogs.map { catalog ->
                 async {
-                    withTimeoutOrNull(CATALOG_TIMEOUT_MS) {
+                    withTimeoutOrNull(addon.timeoutMs) {
                         try {
                             val items = addonRepository.getCatalog(addon, catalog.type, catalog.id)
                             CatalogRow(
@@ -43,7 +43,4 @@ class GetAggregatedCatalogUseCase @Inject constructor(
         }.awaitAll().filterNotNull().filter { it.items.isNotEmpty() }
     }
 
-    companion object {
-        private const val CATALOG_TIMEOUT_MS = 15_000L
-    }
 }

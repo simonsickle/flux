@@ -34,7 +34,8 @@ class AddonRepositoryImpl @Inject constructor(
                         manifest = manifestDto.toDomain(),
                         transportUrl = entity.transportUrl,
                         enabled = entity.enabled,
-                        orderIndex = entity.orderIndex
+                        orderIndex = entity.orderIndex,
+                        timeoutMs = entity.timeoutMs
                     )
                 }.onFailure { e ->
                     Log.w(TAG, "Failed to parse manifest for addon '${entity.id}', skipping: ${e.message}")
@@ -84,6 +85,10 @@ class AddonRepositoryImpl @Inject constructor(
     override suspend fun setAddonEnabled(addonId: String, enabled: Boolean) {
         val entity = addonDao.getAddonById(addonId) ?: return
         addonDao.updateAddon(entity.copy(enabled = enabled))
+    }
+
+    override suspend fun setAddonTimeout(addonId: String, timeoutMs: Long) {
+        addonDao.updateAddonTimeout(addonId, timeoutMs)
     }
 
     override suspend fun getCatalog(

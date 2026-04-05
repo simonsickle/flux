@@ -47,12 +47,25 @@ data class AddonManifestDto(
     val description: String = "",
     val logo: String? = null,
     val background: String? = null,
+    val contactEmail: String? = null,
     @Serializable(with = ResourceListSerializer::class)
     val resources: List<String> = emptyList(),
     val types: List<String> = emptyList(),
     val idPrefixes: List<String> = emptyList(),
     val catalogs: List<CatalogEntryDto> = emptyList(),
-    val behaviorHints: BehaviorHintsDto = BehaviorHintsDto()
+    val addonCatalogs: List<CatalogEntryDto> = emptyList(),
+    val behaviorHints: BehaviorHintsDto = BehaviorHintsDto(),
+    val config: List<AddonConfigDto> = emptyList()
+)
+
+@Serializable
+data class AddonConfigDto(
+    val key: String = "",
+    val type: String = "text",
+    val title: String? = null,
+    val default: String? = null,
+    val options: List<String> = emptyList(),
+    val required: Boolean = false
 )
 
 @Serializable
@@ -67,7 +80,8 @@ data class CatalogEntryDto(
 data class ExtraEntryDto(
     val name: String = "",
     val isRequired: Boolean = false,
-    val options: List<String> = emptyList()
+    val options: List<String> = emptyList(),
+    val optionsLimit: Int = 1
 )
 
 @Serializable
@@ -112,9 +126,12 @@ data class MetaDetailDto(
     val background: String? = null,
     val logo: String? = null,
     val description: String? = null,
+    val released: String? = null,
     val releaseInfo: String? = null,
     val imdbRating: String? = null,
     val runtime: String? = null,
+    val language: String? = null,
+    val country: String? = null,
     val genres: List<String> = emptyList(),
     val director: List<String> = emptyList(),
     val cast: List<String> = emptyList(),
@@ -170,6 +187,7 @@ data class StreamInfoDto(
     val fileIdx: Int? = null,
     val externalUrl: String? = null,
     val name: String? = null,
+    val title: String? = null,
     val description: String? = null,
     val subtitles: List<SubtitleInfoDto> = emptyList(),
     val sources: List<String> = emptyList(),
@@ -180,7 +198,17 @@ data class StreamInfoDto(
 data class StreamBehaviorHintsDto(
     val notWebReady: Boolean = false,
     val bingeGroup: String? = null,
-    val countryWhitelist: List<String> = emptyList()
+    val countryWhitelist: List<String> = emptyList(),
+    val proxyHeaders: ProxyHeadersDto? = null,
+    val videoHash: String? = null,
+    val videoSize: Long? = null,
+    val filename: String? = null
+)
+
+@Serializable
+data class ProxyHeadersDto(
+    val request: Map<String, String> = emptyMap(),
+    val response: Map<String, String> = emptyMap()
 )
 
 @Serializable

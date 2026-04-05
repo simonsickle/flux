@@ -20,7 +20,7 @@ class GetStreamsUseCase @Inject constructor(
 
         val allStreams = addons.map { addon ->
             async {
-                withTimeoutOrNull(STREAM_TIMEOUT_MS) {
+                withTimeoutOrNull(addon.timeoutMs) {
                     runCatching { addonRepository.getStreams(addon, type, id) }
                         .getOrDefault(emptyList())
                 } ?: emptyList()
@@ -46,7 +46,4 @@ class GetStreamsUseCase @Inject constructor(
         allStreams
     }
 
-    companion object {
-        private const val STREAM_TIMEOUT_MS = 15_000L
-    }
 }

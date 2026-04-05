@@ -1,5 +1,6 @@
 package dev.simonsickle.flux.feature.addons
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,7 +51,8 @@ fun MobileAddonsScreen(
     onInstallAddon: (String) -> Unit,
     onToggleAddon: (String, Boolean) -> Unit,
     onRemoveAddon: (String) -> Unit,
-    onMoveAddon: (String, Int) -> Unit
+    onMoveAddon: (String, Int) -> Unit,
+    onSetTimeout: (String, Long) -> Unit = { _, _ -> }
 ) {
     var showInstallDialog by rememberSaveable { mutableStateOf(false) }
     var installUrl by rememberSaveable { mutableStateOf("") }
@@ -108,7 +110,8 @@ fun MobileAddonsScreen(
                         onToggle = { onToggleAddon(addon.manifest.id, it) },
                         onRemove = { onRemoveAddon(addon.manifest.id) },
                         onMoveUp = { onMoveAddon(addon.manifest.id, index - 1) },
-                        onMoveDown = { onMoveAddon(addon.manifest.id, index + 1) }
+                        onMoveDown = { onMoveAddon(addon.manifest.id, index + 1) },
+                        onSetTimeout = { onSetTimeout(addon.manifest.id, it) }
                     )
                 }
             }
@@ -190,8 +193,11 @@ private fun MobileAddonItem(
     onToggle: (Boolean) -> Unit,
     onRemove: () -> Unit,
     onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit
+    onMoveDown: () -> Unit,
+    onSetTimeout: (Long) -> Unit
 ) {
+    var showTimeoutDialog by remember { mutableStateOf(false) }
+
     ListItem(
         headlineContent = { Text(addon.manifest.name) },
         supportingContent = {
@@ -205,6 +211,12 @@ private fun MobileAddonItem(
                     )
                 }
                 Text(addon.manifest.description, maxLines = 2)
+                Text(
+                    "Timeout: ${addon.timeoutMs / 1000}s",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable { showTimeoutDialog = true }
+                )
             }
         },
         trailingContent = {
@@ -219,6 +231,64 @@ private fun MobileAddonItem(
                 IconButton(onClick = onRemove) {
                     Icon(Icons.Default.Delete, contentDescription = "Remove")
                 }
+            }
+        }
+    )
+
+    if (showTimeoutDialog) {
+        TimeoutDialog(
+            currentTimeoutMs = addon.timeoutMs,
+            onDismiss = { showTimeoutDialog = false },
+            onConfirm = { newTimeout ->
+                onSetTimeout(newTimeout)
+                showTimeoutDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun TimeoutDialog(
+    currentTimeoutMs: Long,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
+) {
+    var timeoutSeconds by remember { mutableStateOf((currentTimeoutMs / 1000).toString()) }
+    val isValid = remember(timeoutSeconds) {
+        timeoutSeconds.toLongOrNull()?.let { it in 5..60 } ?: false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Request Timeout") },
+        text = {
+            Column {
+                Text("How long to wait for this addon to respond (5-60 seconds).")
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = timeoutSeconds,
+                    onValueChange = { timeoutSeconds = it.filter(Char::isDigit) },
+                    label = { Text("Timeout (seconds)") },
+                    isError = timeoutSeconds.isNotBlank() && !isValid,
+                    supportingText = if (timeoutSeconds.isNotBlank() && !isValid) {
+                        { Text("Must be between 5 and 60") }
+                    } else null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = isValid,
+                onClick = { onConfirm(timeoutSeconds.toLong() * 1000) }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )

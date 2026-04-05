@@ -7,11 +7,23 @@ data class AddonManifest(
     val description: String,
     val logo: String? = null,
     val background: String? = null,
+    val contactEmail: String? = null,
     val resources: List<String>,
     val types: List<String>,
     val idPrefixes: List<String>,
     val catalogs: List<CatalogEntry>,
-    val behaviorHints: BehaviorHints = BehaviorHints()
+    val addonCatalogs: List<CatalogEntry> = emptyList(),
+    val behaviorHints: BehaviorHints = BehaviorHints(),
+    val config: List<AddonConfig> = emptyList()
+)
+
+data class AddonConfig(
+    val key: String,
+    val type: String,
+    val title: String? = null,
+    val default: String? = null,
+    val options: List<String> = emptyList(),
+    val required: Boolean = false
 )
 
 data class CatalogEntry(
@@ -24,7 +36,8 @@ data class CatalogEntry(
 data class ExtraEntry(
     val name: String,
     val isRequired: Boolean = false,
-    val options: List<String> = emptyList()
+    val options: List<String> = emptyList(),
+    val optionsLimit: Int = 1
 )
 
 data class BehaviorHints(
@@ -38,5 +51,10 @@ data class InstalledAddon(
     val manifest: AddonManifest,
     val transportUrl: String,
     val enabled: Boolean = true,
-    val orderIndex: Int = 0
-)
+    val orderIndex: Int = 0,
+    val timeoutMs: Long = DEFAULT_ADDON_TIMEOUT_MS
+) {
+    companion object {
+        const val DEFAULT_ADDON_TIMEOUT_MS = 15_000L
+    }
+}

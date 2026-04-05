@@ -11,7 +11,7 @@ import dev.simonsickle.flux.core.database.entity.WatchHistoryEntity
 
 @Database(
     entities = [InstalledAddonEntity::class, WatchHistoryEntity::class, BookmarkEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class FluxDatabase : RoomDatabase() {

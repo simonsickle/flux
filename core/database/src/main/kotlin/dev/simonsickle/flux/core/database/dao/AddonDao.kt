@@ -26,4 +26,7 @@ interface AddonDao {
 
     @Update
     suspend fun updateAddon(addon: InstalledAddonEntity)
+
+    @Query("UPDATE installed_addons SET timeoutMs = :timeoutMs WHERE id = :id")
+    suspend fun updateAddonTimeout(id: String, timeoutMs: Long)
 }

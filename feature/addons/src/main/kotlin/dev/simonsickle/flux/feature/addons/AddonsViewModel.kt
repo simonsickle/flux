@@ -83,4 +83,10 @@ class AddonsViewModel @Inject constructor(
             addonRepository.updateAddonOrder(addonId, newIndex.coerceAtLeast(0))
         }
     }
+
+    fun setAddonTimeout(addonId: String, timeoutMs: Long) {
+        viewModelScope.launch {
+            addonRepository.setAddonTimeout(addonId, timeoutMs.coerceIn(5_000L, 60_000L))
+        }
+    }
 }

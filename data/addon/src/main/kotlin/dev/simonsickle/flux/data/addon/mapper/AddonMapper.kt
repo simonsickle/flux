@@ -10,18 +10,30 @@ fun AddonManifestDto.toDomain() = AddonManifest(
     description = description,
     logo = logo,
     background = background,
+    contactEmail = contactEmail,
     resources = resources,
     types = types,
     idPrefixes = idPrefixes,
     catalogs = catalogs.map { it.toDomain() },
-    behaviorHints = behaviorHints.toDomain()
+    addonCatalogs = addonCatalogs.map { it.toDomain() },
+    behaviorHints = behaviorHints.toDomain(),
+    config = config.map { it.toDomain() }
+)
+
+fun AddonConfigDto.toDomain() = AddonConfig(
+    key = key,
+    type = type,
+    title = title,
+    default = default,
+    options = options,
+    required = required
 )
 
 fun CatalogEntryDto.toDomain() = CatalogEntry(
     type = type,
     id = id,
     name = name,
-    extra = extra.map { ExtraEntry(it.name, it.isRequired, it.options) }
+    extra = extra.map { ExtraEntry(it.name, it.isRequired, it.options, it.optionsLimit) }
 )
 
 fun BehaviorHintsDto.toDomain() = BehaviorHints(
@@ -61,9 +73,12 @@ fun MetaDetailDto.toDomain() = MetaDetail(
     background = background,
     logo = logo,
     description = description,
+    released = released,
     releaseInfo = releaseInfo,
     imdbRating = imdbRating,
     runtime = runtime,
+    language = language,
+    country = country,
     genres = genres,
     director = director,
     cast = cast,
@@ -96,12 +111,18 @@ fun StreamInfoDto.toDomain() = StreamInfo(
     fileIdx = fileIdx,
     externalUrl = externalUrl,
     name = name,
-    description = description,
+    description = description ?: title,
     subtitles = subtitles.map { SubtitleInfo(it.id, it.url, it.lang) },
     sources = sources,
     behaviorHints = StreamBehaviorHints(
         notWebReady = behaviorHints.notWebReady,
         bingeGroup = behaviorHints.bingeGroup,
-        countryWhitelist = behaviorHints.countryWhitelist
+        countryWhitelist = behaviorHints.countryWhitelist,
+        proxyHeaders = behaviorHints.proxyHeaders?.let {
+            ProxyHeaders(request = it.request, response = it.response)
+        },
+        videoHash = behaviorHints.videoHash,
+        videoSize = behaviorHints.videoSize,
+        filename = behaviorHints.filename
     )
 )
