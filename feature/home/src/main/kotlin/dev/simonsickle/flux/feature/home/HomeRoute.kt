@@ -35,7 +35,8 @@ fun HomeRoute(
             onNavigateToSearch = onNavigateToSearch,
             onNavigateToSettings = onNavigateToSettings,
             onNavigateToAddons = onNavigateToAddons,
-            onNavigateToDetail = onNavigateToDetail
+            onNavigateToDetail = onNavigateToDetail,
+            onRemoveFromHistory = viewModel::removeFromHistory
         )
     }
 }

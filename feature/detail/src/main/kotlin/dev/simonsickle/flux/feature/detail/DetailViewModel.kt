@@ -22,7 +22,9 @@ data class DetailUiState(
     val isLoadingStreams: Boolean = false,
     val error: String? = null,
     val resolvedStreamUrl: String? = null,
-    val isResolvingStream: Boolean = false
+    val isResolvingStream: Boolean = false,
+    val resolvingStreamUrl: String? = null,
+    val selectedSeason: Int? = null
 )
 
 @HiltViewModel
@@ -75,23 +77,37 @@ class DetailViewModel @Inject constructor(
 
     fun playStream(stream: StreamInfo) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isResolvingStream = true)
+            _uiState.value = _uiState.value.copy(
+                isResolvingStream = true,
+                resolvingStreamUrl = stream.url,
+                error = null
+            )
             try {
                 val resolved = resolveAndPlayStreamUseCase(stream)
                 _uiState.value = _uiState.value.copy(
                     isResolvingStream = false,
+                    resolvingStreamUrl = null,
                     resolvedStreamUrl = resolved.url
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isResolvingStream = false,
+                    resolvingStreamUrl = null,
                     error = e.message ?: "Failed to resolve stream"
                 )
             }
         }
     }
 
+    fun selectSeason(season: Int) {
+        _uiState.value = _uiState.value.copy(selectedSeason = season)
+    }
+
     fun clearResolvedStream() {
         _uiState.value = _uiState.value.copy(resolvedStreamUrl = null)
+    }
+
+    fun retry() {
+        loadDetail()
     }
 }
