@@ -7,6 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 class GetStreamsUseCase @Inject constructor(
@@ -19,8 +20,10 @@ class GetStreamsUseCase @Inject constructor(
 
         val allStreams = addons.map { addon ->
             async {
-                runCatching { addonRepository.getStreams(addon, type, id) }
-                    .getOrDefault(emptyList())
+                withTimeoutOrNull(STREAM_TIMEOUT_MS) {
+                    runCatching { addonRepository.getStreams(addon, type, id) }
+                        .getOrDefault(emptyList())
+                } ?: emptyList()
             }
         }.awaitAll().flatten()
 
@@ -41,5 +44,9 @@ class GetStreamsUseCase @Inject constructor(
         }
 
         allStreams
+    }
+
+    companion object {
+        private const val STREAM_TIMEOUT_MS = 15_000L
     }
 }

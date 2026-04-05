@@ -116,36 +116,69 @@ fun MobileAddonsScreen(
     }
 
     if (showInstallDialog) {
+        val isValidUrl = remember(installUrl) {
+            installUrl.isNotBlank() && runCatching {
+                val uri = java.net.URI(installUrl.trim())
+                uri.scheme?.lowercase() in listOf("http", "https") && !uri.host.isNullOrBlank()
+            }.getOrDefault(false)
+        }
+
         AlertDialog(
-            onDismissRequest = { showInstallDialog = false },
+            onDismissRequest = {
+                if (!uiState.isInstalling) {
+                    showInstallDialog = false
+                }
+            },
             title = { Text("Install Addon") },
             text = {
-                OutlinedTextField(
-                    value = installUrl,
-                    onValueChange = { installUrl = it },
-                    label = { Text("Transport URL") },
-                    placeholder = { Text("https://...") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column {
+                    OutlinedTextField(
+                        value = installUrl,
+                        onValueChange = { installUrl = it },
+                        label = { Text("Transport URL") },
+                        placeholder = { Text("https://addon-host.com/manifest.json") },
+                        isError = installUrl.isNotBlank() && !isValidUrl,
+                        supportingText = if (installUrl.isNotBlank() && !isValidUrl) {
+                            { Text("Enter a valid HTTP or HTTPS URL") }
+                        } else null,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (uiState.installError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.installError,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
-                    enabled = !uiState.isInstalling,
-                    onClick = {
-                        onInstallAddon(installUrl)
-                        installUrl = ""
-                        showInstallDialog = false
-                    }
+                    enabled = !uiState.isInstalling && isValidUrl,
+                    onClick = { onInstallAddon(installUrl.trim()) }
                 ) {
                     Text(if (uiState.isInstalling) "Installing..." else "Install")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showInstallDialog = false }) {
+                TextButton(
+                    enabled = !uiState.isInstalling,
+                    onClick = { showInstallDialog = false }
+                ) {
                     Text("Cancel")
                 }
             }
         )
+    }
+
+    // Close dialog and clear URL on successful install
+    LaunchedEffect(uiState.installSuccessMessage) {
+        if (uiState.installSuccessMessage != null) {
+            installUrl = ""
+            showInstallDialog = false
+        }
     }
 }
 
@@ -164,6 +197,13 @@ private fun MobileAddonItem(
         supportingContent = {
             Column {
                 Text("v${addon.manifest.version}")
+                if (addon.manifest.resources.isNotEmpty()) {
+                    Text(
+                        addon.manifest.resources.joinToString(" | ") { it.replaceFirstChar(Char::titlecase) },
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(addon.manifest.description, maxLines = 2)
             }
         },
