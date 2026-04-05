@@ -13,6 +13,8 @@ import dev.simonsickle.flux.feature.detail.DetailRoute
 import dev.simonsickle.flux.feature.player.PlayerRoute
 import dev.simonsickle.flux.feature.search.SearchRoute
 import dev.simonsickle.flux.feature.settings.SettingsRoute
+import dev.simonsickle.flux.feature.settings.sync.SyncReceiveRoute
+import dev.simonsickle.flux.feature.settings.sync.SyncSendRoute
 import dev.simonsickle.flux.feature.addons.AddonsRoute
 
 object FluxRoutes {
@@ -21,6 +23,8 @@ object FluxRoutes {
     const val PLAYER = "player"
     const val SEARCH = "search"
     const val SETTINGS = "settings"
+    const val SYNC_SEND = "sync/send"
+    const val SYNC_RECEIVE = "sync/receive"
     const val ADDONS = "addons"
 
     fun detail(type: String, id: String) = "detail/$type/$id"
@@ -103,8 +107,16 @@ fun FluxNavHost(modifier: Modifier = Modifier) {
         }
         composable(FluxRoutes.SETTINGS) {
             SettingsRoute(
-                onNavigateUp = { navController.navigateUp() }
+                onNavigateUp = { navController.navigateUp() },
+                onNavigateToSyncSend = { navController.navigate(FluxRoutes.SYNC_SEND) },
+                onNavigateToSyncReceive = { navController.navigate(FluxRoutes.SYNC_RECEIVE) }
             )
+        }
+        composable(FluxRoutes.SYNC_SEND) {
+            SyncSendRoute(onNavigateUp = { navController.navigateUp() })
+        }
+        composable(FluxRoutes.SYNC_RECEIVE) {
+            SyncReceiveRoute(onNavigateUp = { navController.navigateUp() })
         }
         composable(FluxRoutes.ADDONS) {
             AddonsRoute(
