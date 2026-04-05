@@ -3,6 +3,7 @@ package dev.simonsickle.flux.domain.usecase
 import dev.simonsickle.flux.core.model.ResolvedStream
 import dev.simonsickle.flux.core.model.StreamInfo
 import dev.simonsickle.flux.domain.repository.DebridRepository
+import java.net.URI
 import javax.inject.Inject
 
 class ResolveAndPlayStreamUseCase @Inject constructor(
@@ -25,10 +26,16 @@ class ResolveAndPlayStreamUseCase @Inject constructor(
     }
 
     private fun isRestrictedUrl(url: String): Boolean {
-        val restrictedHosts = listOf(
+        val host = runCatching { URI(url).host?.lowercase() }.getOrNull() ?: return false
+        return RESTRICTED_HOSTS.any { restricted ->
+            host == restricted || host.endsWith(".$restricted")
+        }
+    }
+
+    companion object {
+        private val RESTRICTED_HOSTS = listOf(
             "real-debrid.com", "uptostream.com", "1fichier.com",
             "nitroflare.com", "rapidgator.net", "uploadgig.com"
         )
-        return restrictedHosts.any { url.contains(it) }
     }
 }

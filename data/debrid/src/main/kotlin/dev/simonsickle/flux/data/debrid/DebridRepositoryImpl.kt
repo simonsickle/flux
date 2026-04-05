@@ -6,6 +6,9 @@ import dev.simonsickle.flux.core.model.StreamInfo
 import dev.simonsickle.flux.data.debrid.api.RealDebridApi
 import dev.simonsickle.flux.domain.repository.DebridRepository
 import dev.simonsickle.flux.domain.repository.DebridUserInfo
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -96,17 +99,19 @@ class DebridRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun checkInstantAvailability(infoHashes: List<String>): Map<String, Boolean> {
-        val result = mutableMapOf<String, Boolean>()
-        for (hash in infoHashes) {
-            runCatching {
-                val response = realDebridApi.getInstantAvailability(hash)
-                val hashData = response[hash.lowercase()]
-                result[hash] = hashData != null && hashData.toString() != "{}"
-            }
+    override suspend fun checkInstantAvailability(infoHashes: List<String>): Map<String, Boolean> =
+        coroutineScope {
+            infoHashes.map { hash ->
+                async {
+                    val available = runCatching {
+                        val response = realDebridApi.getInstantAvailability(hash)
+                        val hashData = response[hash.lowercase()]
+                        hashData != null && hashData.toString() != "{}"
+                    }.getOrDefault(false)
+                    hash to available
+                }
+            }.awaitAll().toMap()
         }
-        return result
-    }
 
     private fun buildMagnetUrl(infoHash: String, sources: List<String>): String {
         val trackers = sources.filter { it.startsWith("tracker:") }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 class GetAggregatedCatalogUseCase @Inject constructor(
@@ -22,21 +23,24 @@ class GetAggregatedCatalogUseCase @Inject constructor(
 
             matchingCatalogs.map { catalog ->
                 async {
-                    try {
-                        val items = addonRepository.getCatalog(addon, catalog.type, catalog.id)
-                        CatalogRow(
-                            addonId = addon.manifest.id,
-                            addonName = addon.manifest.name,
-                            catalogId = catalog.id,
-                            catalogName = catalog.name,
-                            type = contentType,
-                            items = items
-                        )
-                    } catch (e: Exception) {
-                        null
+                    withTimeoutOrNull(addon.timeoutMs) {
+                        try {
+                            val items = addonRepository.getCatalog(addon, catalog.type, catalog.id)
+                            CatalogRow(
+                                addonId = addon.manifest.id,
+                                addonName = addon.manifest.name,
+                                catalogId = catalog.id,
+                                catalogName = catalog.name,
+                                type = contentType,
+                                items = items
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
                     }
                 }
             }
         }.awaitAll().filterNotNull().filter { it.items.isNotEmpty() }
     }
+
 }

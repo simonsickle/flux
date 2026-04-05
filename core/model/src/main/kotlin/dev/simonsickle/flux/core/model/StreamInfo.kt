@@ -16,7 +16,16 @@ data class StreamInfo(
 data class StreamBehaviorHints(
     val notWebReady: Boolean = false,
     val bingeGroup: String? = null,
-    val countryWhitelist: List<String> = emptyList()
+    val countryWhitelist: List<String> = emptyList(),
+    val proxyHeaders: ProxyHeaders? = null,
+    val videoHash: String? = null,
+    val videoSize: Long? = null,
+    val filename: String? = null
+)
+
+data class ProxyHeaders(
+    val request: Map<String, String> = emptyMap(),
+    val response: Map<String, String> = emptyMap()
 )
 
 data class SubtitleInfo(
